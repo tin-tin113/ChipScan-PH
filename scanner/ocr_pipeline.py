@@ -16,6 +16,14 @@ def get_ocr_engine():
     if _ocr_engine is None:
         # Disable oneDNN to avoid new PIR executor conversion crash on CPU
         os.environ['FLAGS_use_onednn'] = '0'
+        # Limit CPU threads to reduce memory footprint on limited hosting (Render free tier)
+        os.environ['CPU_NUM'] = '1'
+        os.environ['OMP_NUM_THREADS'] = '1'
+        os.environ['MKL_NUM_THREADS'] = '1'
+        os.environ['OPENBLAS_NUM_THREADS'] = '1'
+        os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+        os.environ['NUMEXPR_NUM_THREADS'] = '1'
+        
         from paddleocr import PaddleOCR
         import logging
         logging.getLogger("ppocr").setLevel(logging.ERROR)

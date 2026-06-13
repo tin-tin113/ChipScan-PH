@@ -697,11 +697,25 @@ async function uploadScanImage(imageFileOrBlob) {
             },
             body: formData
         });
-        const result = await response.json();
+        
         DOM.scannerLoader.classList.add('hidden');
         setScannerBusyState(false);
-        
-        if (response.ok && result.success) {
+
+        if (!response.ok) {
+            let serverError = "";
+            try {
+                const errData = await response.json();
+                serverError = errData.error || errData.message;
+            } catch (e) {
+                serverError = `HTTP ${response.status} ${response.statusText}`;
+            }
+            alert("Scan failed: " + (serverError || `Status ${response.status}`));
+            DOM.galleryInput.value = '';
+            return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
             displayScanResult(result.scan);
         } else {
             alert(result.error || "Scan request failed.");
@@ -709,7 +723,8 @@ async function uploadScanImage(imageFileOrBlob) {
     } catch (err) {
         DOM.scannerLoader.classList.add('hidden');
         setScannerBusyState(false);
-        alert("Network error: failed to submit scan image.");
+        console.error("Scan submission error detail:", err);
+        alert("Network error: " + (err.message || "Failed to submit scan image. Check server logs."));
     }
     DOM.galleryInput.value = '';
 }
