@@ -24,10 +24,22 @@ def get_ocr_engine():
         os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
         os.environ['NUMEXPR_NUM_THREADS'] = '1'
         
+        # Configure PaddlePaddle memory flags
+        import paddle
+        paddle.set_flags({
+            "FLAGS_fraction_of_cpu_memory_to_use": 0.1,
+            "FLAGS_allocator_strategy": "naive_best_fit",
+            "FLAGS_eager_delete_scope": True,
+            "FLAGS_eager_delete_tensor_gb": 0.0,
+            "FLAGS_fast_eager_deletion_mode": True,
+            "FLAGS_use_pinned_memory": False
+        })
+        
         from paddleocr import PaddleOCR
         import logging
         logging.getLogger("ppocr").setLevel(logging.ERROR)
         _ocr_engine = PaddleOCR(
+            ocr_version='PP-OCRv4',
             use_textline_orientation=False,
             lang='en',
             enable_mkldnn=False,

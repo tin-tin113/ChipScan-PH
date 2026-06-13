@@ -12,6 +12,6 @@ echo "Running migrations..."
 python manage.py migrate
 
 echo "Pre-downloading PaddleOCR models to prevent timeout on first scan..."
-python -c "from paddleocr import PaddleOCR; PaddleOCR(lang='en')"
+python -c "from paddleocr import PaddleOCR; PaddleOCR(ocr_version='PP-OCRv4', lang='en')"
 
 echo "Build script execution complete!"

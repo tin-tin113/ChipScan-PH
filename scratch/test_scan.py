@@ -36,7 +36,42 @@ def test_ocr_flow():
         print(f"Preprocessed image saved to {temp_pre_path}")
         
         print("Initializing PaddleOCR...")
-        ocr = get_ocr_engine()
+        import paddle
+        paddle.set_flags({
+            "FLAGS_fraction_of_cpu_memory_to_use": 0.1,
+            "FLAGS_allocator_strategy": "naive_best_fit",
+            "FLAGS_eager_delete_scope": True,
+            "FLAGS_eager_delete_tensor_gb": 0.0,
+            "FLAGS_fast_eager_deletion_mode": True,
+            "FLAGS_use_pinned_memory": False
+        })
+        
+        # Temporarily re-initialize get_ocr_engine settings for testing
+        from scanner import ocr_pipeline
+        ocr_pipeline._ocr_engine = None # Force re-init
+        
+        # Let's override ocr_pipeline's get_ocr_engine to use PP-OCRv4
+        original_get = ocr_pipeline.get_ocr_engine
+        def get_v4_engine():
+            import os
+            os.environ['FLAGS_use_onednn'] = '0'
+            os.environ['CPU_NUM'] = '1'
+            os.environ['OMP_NUM_THREADS'] = '1'
+            os.environ['MKL_NUM_THREADS'] = '1'
+            from paddleocr import PaddleOCR
+            import logging
+            logging.getLogger("ppocr").setLevel(logging.ERROR)
+            return PaddleOCR(
+                ocr_version='PP-OCRv4',
+                use_textline_orientation=False,
+                lang='en',
+                enable_mkldnn=False,
+                use_doc_unwarping=False,
+                use_doc_orientation_classify=False
+            )
+        ocr_pipeline.get_ocr_engine = get_v4_engine
+        
+        ocr = ocr_pipeline.get_ocr_engine()
         
         print("Executing OCR text recognition...")
         results = ocr.ocr(temp_pre_path)
