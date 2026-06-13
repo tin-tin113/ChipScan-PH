@@ -4,6 +4,7 @@ let activeTab = 'panel-scan';
 let cameraStream = null;
 let useLiveCamera = false;
 let cropperInstance = null;
+let hasHardwareZoom = false;
 
 // DOM Selectors
 const DOM = {
@@ -398,7 +399,16 @@ async function initCamera() {
         
         useLiveCamera = true;
 
-        // Check zoom capabilities on the track
+        // Initialize with default digital zoom values first
+        DOM.zoomControlContainer.style.display = 'flex';
+        DOM.cameraZoomSlider.min = 1;
+        DOM.cameraZoomSlider.max = 4;
+        DOM.cameraZoomSlider.step = 0.1;
+        DOM.cameraZoomSlider.value = 1.0;
+        DOM.zoomValueLabel.innerText = '1.0x';
+        hasHardwareZoom = false;
+
+        // Check zoom capabilities on the track for hardware-based zoom
         const track = cameraStream.getVideoTracks()[0];
         if (track) {
             try {
@@ -407,27 +417,31 @@ async function initCamera() {
                     if (!cameraStream) return;
                     const capabilities = track.getCapabilities();
                     if (capabilities.zoom) {
-                        DOM.zoomControlContainer.style.display = 'flex';
+                        hasHardwareZoom = true;
                         DOM.cameraZoomSlider.min = capabilities.zoom.min || 1;
                         DOM.cameraZoomSlider.max = capabilities.zoom.max || 5;
                         DOM.cameraZoomSlider.step = capabilities.zoom.step || 0.1;
                         DOM.cameraZoomSlider.value = track.getSettings().zoom || 1;
                         DOM.zoomValueLabel.innerText = `${parseFloat(DOM.cameraZoomSlider.value).toFixed(1)}x`;
-                    } else {
-                        DOM.zoomControlContainer.style.display = 'none';
                     }
                 }, 400);
             } catch (e) {
-                DOM.zoomControlContainer.style.display = 'none';
+                console.log("Hardware zoom check failed, falling back to digital zoom:", e);
             }
-        } else {
-            DOM.zoomControlContainer.style.display = 'none';
         }
     } catch (err) {
         // Fallback: If webcam fails or is rejected, stream from mock web cam stream route
         console.warn("Camera init failed, falling back to mock stream endpoint: ", err);
         DOM.cameraVideo.classList.add('hidden');
-        DOM.zoomControlContainer.style.display = 'none';
+        
+        // Show zoom slider for simulated digital scale zoom in mock camera mode
+        DOM.zoomControlContainer.style.display = 'flex';
+        DOM.cameraZoomSlider.min = 1;
+        DOM.cameraZoomSlider.max = 4;
+        DOM.cameraZoomSlider.step = 0.1;
+        DOM.cameraZoomSlider.value = 1.0;
+        DOM.zoomValueLabel.innerText = '1.0x';
+        hasHardwareZoom = false;
         
         // Create an image element to load stream instead
         let mockImg = document.getElementById('camera-mock-img');
@@ -450,6 +464,13 @@ function stopCamera() {
     }
     DOM.cameraVideo.srcObject = null;
     DOM.zoomControlContainer.style.display = 'none';
+    
+    // Reset any digital scale transformations
+    DOM.cameraVideo.style.transform = 'none';
+    const mockImg = document.getElementById('camera-mock-img');
+    if (mockImg) {
+        mockImg.style.transform = 'none';
+    }
 }
 
 // CAPTURE FRAME ACTION
@@ -464,7 +485,18 @@ DOM.btnCapture.addEventListener('click', async () => {
         canvas.height = video.videoHeight || 480;
         
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const zoomVal = parseFloat(DOM.cameraZoomSlider.value) || 1.0;
+        
+        if (zoomVal > 1.0 && !hasHardwareZoom) {
+            // Apply digital zoom by cropping a sub-rectangle centered in the source video
+            const sw = canvas.width / zoomVal;
+            const sh = canvas.height / zoomVal;
+            const sx = (canvas.width - sw) / 2;
+            const sy = (canvas.height - sh) / 2;
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
         
         // Convert to blob
         await new Promise((resolve) => {
@@ -480,10 +512,19 @@ DOM.btnCapture.addEventListener('click', async () => {
         canvas.width = 800;
         canvas.height = 600;
         const ctx = canvas.getContext('2d');
+        const zoomVal = parseFloat(DOM.cameraZoomSlider.value) || 1.0;
         
         // Dark gray package background
         ctx.fillStyle = '#22252a';
         ctx.fillRect(0, 0, 800, 600);
+        
+        ctx.save();
+        if (zoomVal > 1.0) {
+            // Translate to center, scale, translate back to draw centered digital zoom
+            ctx.translate(400, 300);
+            ctx.scale(zoomVal, zoomVal);
+            ctx.translate(-400, -300);
+        }
         
         // Draw chip outlines
         ctx.strokeStyle = '#3e4249';
@@ -515,6 +556,8 @@ DOM.btnCapture.addEventListener('click', async () => {
         ctx.fillText(choice.text1, 400, 240);
         ctx.fillText(choice.text2, 400, 310);
         ctx.fillText(choice.text3, 400, 380);
+        
+        ctx.restore();
         
         await new Promise((resolve) => {
             canvas.toBlob((blob) => {
