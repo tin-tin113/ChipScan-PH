@@ -6,7 +6,7 @@ class Technician(models.Model):
         ('tech', 'Tech'),
     )
     username = models.CharField(max_length=50, unique=True)
-    password = models.CharField(max_length=50)
+    password = models.CharField(max_length=128)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='tech')
 
     def __str__(self):
