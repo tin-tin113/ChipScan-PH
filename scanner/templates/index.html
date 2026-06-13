@@ -119,20 +119,6 @@
                         <p>Align chip marking in the camera box or lookup manually</p>
                     </div>
                     
-                    <!-- Manual Lookup Search bar -->
-                    <div class="manual-lookup-container glass" style="padding: 10px 14px; position: relative; margin-bottom: 4px;">
-                        <div class="input-search-wrapper" style="position: relative; display: flex; align-items: center; gap: 10px;">
-                            <i class="fa-solid fa-keyboard" style="color: var(--color-cyan); font-size: 0.95rem;"></i>
-                            <input type="text" id="manual-chip-search" placeholder="Type chip code to lookup..." style="flex: 1; border: none; background: none; padding: 4px 0; color: var(--text-main); font-size: 0.85rem; outline: none; margin: 0;">
-                            <button id="btn-clear-search" class="btn-text hidden" style="color: var(--text-muted); padding: 4px; font-size: 0.85rem; background: none; border: none; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        
-                        <!-- Autocomplete Suggestions List Overlay -->
-                        <div id="search-suggestions-box" class="search-suggestions-box glass hidden" style="position: absolute; top: calc(100% + 6px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; z-index: 110; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid var(--border-glass);">
-                            <!-- Dynamic items injected here -->
-                        </div>
-                    </div>
-                    
                     <!-- Viewfinder Panel -->
                     <div class="viewfinder-wrapper glass">
                         <!-- Video or Simulator Stream -->
@@ -176,6 +162,20 @@
                             </button>
                             <!-- Hidden File Input -->
                             <input type="file" id="gallery-input" accept="image/*" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Manual Lookup Search bar -->
+                    <div class="manual-lookup-container glass" style="padding: 10px 14px; position: relative; margin-top: 15px; margin-bottom: 4px;">
+                        <div class="input-search-wrapper" style="position: relative; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-keyboard" style="color: var(--color-cyan); font-size: 0.95rem;"></i>
+                            <input type="text" id="manual-chip-search" placeholder="Type chip code to lookup..." style="flex: 1; border: none; background: none; padding: 4px 0; color: var(--text-main); font-size: 0.85rem; outline: none; margin: 0;">
+                            <button id="btn-clear-search" class="btn-text hidden" style="color: var(--text-muted); padding: 4px; font-size: 0.85rem; background: none; border: none; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        
+                        <!-- Autocomplete Suggestions List Overlay -->
+                        <div id="search-suggestions-box" class="search-suggestions-box glass hidden" style="position: absolute; top: calc(100% + 6px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; z-index: 110; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid var(--border-glass);">
+                            <!-- Dynamic items injected here -->
                         </div>
                     </div>
 

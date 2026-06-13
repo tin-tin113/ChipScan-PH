@@ -337,10 +337,7 @@ DOM.logoutBtn.addEventListener('click', async () => {
         stopCamera();
         await fetch('/api/logout/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
         currentUser = null;
-        DOM.appView.classList.add('hidden');
-        DOM.loginView.classList.remove('hidden');
-        DOM.credentialsForm.reset();
-        DOM.loginError.classList.add('hidden');
+        window.location.reload();
     }
 });
 
@@ -720,7 +717,12 @@ function displayScanResult(scan) {
     DOM.scanResultCard.classList.remove('hidden');
     
     DOM.resultMakerCode.innerText = `${scan.maker.toUpperCase()} ${scan.code}`;
-    DOM.scanPreviewImg.src = scan.image_url;
+    if (scan.image_url) {
+        DOM.scanPreviewImg.src = scan.image_url;
+        DOM.scanPreviewImg.parentNode.classList.remove('hidden');
+    } else {
+        DOM.scanPreviewImg.parentNode.classList.add('hidden');
+    }
     
     DOM.valMaker.innerText = scan.maker;
     DOM.valCode.innerText = scan.code;
