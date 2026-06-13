@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ChipScan PH - Premium Smartphone Chip Grading & Pricing</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Background Glow Blobs -->
+    <div class="glow-blob blob-1"></div>
+    <div class="glow-blob blob-2"></div>
+    <div class="glow-blob blob-3"></div>
+
+    <!-- MAIN APP CONTAINER (Centered Mobile Viewport up to 430px wide) -->
+    <div class="mobile-viewport">
+        
+        <!-- ==================== LOGIN SCREEN ==================== -->
+        <section id="login-view" class="app-screen active">
+            <div class="login-card glass">
+                <div class="brand-header">
+                    <div class="brand-logo">
+                        <i class="fa-solid fa-microchip pulse-logo"></i>
+                    </div>
+                    <h1>CHIPSCAN PH</h1>
+                    <p>Smartphone Memory Grading & Valuation</p>
+                </div>
+                
+                <form id="credentials-login-form">
+                    <div class="input-group">
+                        <label for="username"><i class="fa-regular fa-user"></i> Username</label>
+                        <input type="text" id="username" placeholder="Enter username" required autocomplete="username">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+                        <input type="password" id="password" placeholder="Enter password" required autocomplete="current-password">
+                    </div>
+                    
+                    <div id="login-error-msg" class="error-banner hidden">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <span>Invalid credentials</span>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span>Sign In</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </button>
+                </form>
+
+                <div class="divider"><span>OR</span></div>
+
+                <button id="google-login-trigger" class="btn btn-secondary btn-block">
+                    <i class="fa-brands fa-google"></i> <span>Login with Google</span>
+                </button>
+                
+                <div class="login-footer">
+                    <p>Repair Tech Operations v3.1</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== MAIN APPLICATION SHELL ==================== -->
+        <main id="app-view" class="app-screen hidden">
+            <!-- Header Bar -->
+            <header class="app-header glass">
+                <div class="header-user-info">
+                    <span class="user-avatar"><i class="fa-regular fa-circle-user"></i></span>
+                    <div>
+                        <h4 id="display-username">tech1</h4>
+                        <span id="display-role-badge" class="role-badge badge-tech">TECHNICIAN</span>
+                    </div>
+                </div>
+                
+                <div class="header-actions">
+                    <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
+                        <i class="fa-solid fa-sun theme-icon-sun"></i>
+                        <i class="fa-solid fa-moon theme-icon-moon"></i>
+                    </button>
+                    
+                    <button id="notification-bell" class="icon-btn position-relative" title="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span id="notif-badge" class="badge-dot hidden"></span>
+                    </button>
+                    
+                    <button id="logout-btn" class="icon-btn text-danger" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+
+                <!-- Notifications Dropdown Box -->
+                <div id="notifications-dropdown" class="notifications-box glass hidden">
+                    <div class="notif-header">
+                        <span>Notifications</span>
+                        <button id="notif-clear" class="btn-text">Clear All</button>
+                    </div>
+                    <div id="notifications-list" class="notif-list">
+                        <!-- Dynamic items -->
+                        <div class="notif-empty">No new notifications</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SUB-VIEW PANELS CONTAINER -->
+            <div class="view-panel-container">
+                
+                <!-- ==================== VIEW 1: SCAN (DEFAULT) ==================== -->
+                <div id="panel-scan" class="view-panel active">
+                    <div class="view-title-bar">
+                        <h2>Chip Scanner</h2>
+                        <p>Align chip marking in the camera box</p>
+                    </div>
+                    
+                    <!-- Viewfinder Panel -->
+                    <div class="viewfinder-wrapper glass">
+                        <!-- Video or Simulator Stream -->
+                        <div class="video-container">
+                            <video id="camera-video" autoplay playsinline muted class="camera-feed"></video>
+                            <canvas id="camera-canvas" class="hidden"></canvas>
+                            <!-- Laser scan line animation overlay -->
+                            <div class="scan-laser"></div>
+                            <!-- Alignment reticle -->
+                            <div class="scanner-reticle"></div>
+                        </div>
+                        
+                        <!-- Actions Grid -->
+                        <div class="viewfinder-controls">
+                            <button id="btn-capture" class="btn btn-action">
+                                <i class="fa-solid fa-camera"></i> Capture Frame
+                            </button>
+                            <button id="btn-gallery" class="btn btn-action-sec">
+                                <i class="fa-regular fa-image"></i> Upload Image
+                            </button>
+                            <!-- Hidden File Input -->
+                            <input type="file" id="gallery-input" accept="image/*" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Scanning Loader skeleton -->
+                    <div id="scanner-loader" class="loader-card glass hidden">
+                        <div class="loader-spinner"></div>
+                        <h4>Extracting Text & Matching...</h4>
+                        <p>Deskewing image and running OCR heuristics</p>
+                    </div>
+
+                    <!-- SCAN RESULT PANEL -->
+                    <div id="scan-result-card" class="result-card glass hidden">
+                        <div class="result-header">
+                            <h3 id="result-maker-code">SAMSUNG KLUEG8UHDB</h3>
+                            <span id="result-status-badge" class="match-badge badge-matched">MATCHED</span>
+                        </div>
+                        
+                        <div class="result-details-grid">
+                            <div class="detail-item">
+                                <span class="label">Maker</span>
+                                <span id="val-maker" class="value">Samsung</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Model Code</span>
+                                <span id="val-code" class="value font-mono">KLUEG8UHDB-C2D1</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Size / Capacity</span>
+                                <span id="val-size" class="value">256 GB</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Type</span>
+                                <span id="val-type" class="value">UFS 2.1</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Grade</span>
+                                <span id="val-grade" class="value-grade">A1</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Match Score</span>
+                                <span id="val-score" class="value font-mono">1.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Price Box -->
+                        <div class="price-val-card">
+                            <div class="price-info">
+                                <div class="price-row">
+                                    <span>Buying Price (Coded):</span>
+                                    <span id="val-price-coded" class="price-val">₱0.00</span>
+                                </div>
+                                <div class="price-row secondary-price">
+                                    <span>Buying Price (Non-Code):</span>
+                                    <span id="val-price-noncode" class="price-val-sec">₱0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="notes-box">
+                            <span class="label">Notes</span>
+                            <p id="val-notes">No manual notes registered for this storage module.</p>
+                        </div>
+                        
+                        <!-- Uploaded/Captured Image Preview -->
+                        <div class="scan-preview-image">
+                            <span class="label">Scan Reference</span>
+                            <img id="scan-preview-img" src="" alt="Scan preview">
+                        </div>
+
+                        <!-- Technician Manual Request Action -->
+                        <div id="request-approval-section" class="request-approval-box hidden">
+                            <p><i class="fa-solid fa-circle-question"></i> Scanner could not recognize this chip code.</p>
+                            
+                            <!-- Suggested Match Panel -->
+                            <div id="nearly-matched-box" class="nearly-matched-box hidden">
+                                <h5>Suggested Match (Nearly Matches)</h5>
+                                <div class="suggested-chip-card">
+                                    <div class="suggested-chip-info">
+                                        <strong id="suggested-code">KLUEG8UHDB</strong>
+                                        <span id="suggested-meta">Samsung | 256GB | Grade A1</span>
+                                    </div>
+                                    <button type="button" id="btn-accept-suggestion" class="btn btn-primary btn-xs">Use Details</button>
+                                </div>
+                            </div>
+                            
+                            <button id="btn-request-approval" class="btn btn-secondary btn-sm btn-block">
+                                <i class="fa-solid fa-paper-plane"></i> Submit to Admin for Approval
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== VIEW 2: HISTORY ==================== -->
+                <div id="panel-history" class="view-panel">
+                    <div class="view-title-bar">
+                        <h2>Scan History</h2>
+                        <p>Recent device grading logs</p>
+                    </div>
+                    
+                    <div class="history-list-wrapper scrollable-y">
+                        <div id="history-items-container">
+                            <!-- Dynamic items injected here -->
+                            <div class="empty-state">
+                                <i class="fa-regular fa-folder-open"></i>
+                                <p>No scans performed yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== VIEW 3: APPROVALS ==================== -->
+                <div id="panel-approvals" class="view-panel">
+                    <div class="view-title-bar">
+                        <h2>Approvals Queue</h2>
+                        <p id="approvals-subtitle">Pending chip code registrations</p>
+                    </div>
+                    
+                    <div class="approvals-list-wrapper scrollable-y">
+                        <div id="approvals-items-container">
+                            <!-- Dynamic requests injected here -->
+                            <div class="empty-state">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                                <p>No pending approval requests.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== VIEW 4: ADMIN DASHBOARD ==================== -->
+                <div id="panel-admin" class="view-panel">
+                    <div class="view-title-bar">
+                        <h2>Admin Dashboard</h2>
+                        <p>Operations, inventory & pricing parameters</p>
+                    </div>
+                    
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-cyan"><i class="fa-solid fa-chart-line"></i></div>
+                            <div>
+                                <h3 id="stat-total-scans">0</h3>
+                                <p>Total Scans</p>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-purple"><i class="fa-solid fa-bullseye"></i></div>
+                            <div>
+                                <h3 id="stat-accuracy">100%</h3>
+                                <p>OCR Match Rate</p>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-yellow"><i class="fa-solid fa-clock"></i></div>
+                            <div>
+                                <h3 id="stat-pending-approvals">0</h3>
+                                <p>Pending Approvals</p>
+                            </div>
+                        </div>
+                        <div class="stat-card glass">
+                            <div class="stat-icon icon-green"><i class="fa-solid fa-warehouse"></i></div>
+                            <div>
+                                <h3 id="stat-total-chips">0</h3>
+                                <p>Inventory Items</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Config Accordions -->
+                    <div class="config-tabs-container">
+                        <!-- Accordion Header 1: Price Matrix -->
+                        <details class="accordion-item glass" open>
+                            <summary class="accordion-header">
+                                <span><i class="fa-solid fa-coins"></i> Price Configuration</span>
+                                <i class="fa-solid fa-chevron-down accordion-indicator"></i>
+                            </summary>
+                            <div class="accordion-content">
+                                <form id="pricing-matrix-form">
+                                    <div class="matrix-section">
+                                        <h4>Grade Pricing (₱)</h4>
+                                        <div class="table-responsive">
+                                            <table class="matrix-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Grade</th>
+                                                        <th>Admin Coded</th>
+                                                        <th>Admin Non-Code</th>
+                                                        <th>Tech Coded</th>
+                                                        <th>Tech Non-Code</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="matrix-grades-body">
+                                                    <!-- Seeded dynamically -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="matrix-section mt-4">
+                                        <h4>Size-based Non-Code Pricing (₱)</h4>
+                                        <div class="table-responsive">
+                                            <table class="matrix-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Size</th>
+                                                        <th>Admin Price</th>
+                                                        <th>Tech Price</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="matrix-sizes-body">
+                                                    <!-- Seeded dynamically -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary btn-sm mt-3">
+                                        <i class="fa-solid fa-save"></i> Save Buying Rates
+                                    </button>
+                                    <div id="pricing-success-banner" class="success-banner hidden mt-2">
+                                        <i class="fa-regular fa-circle-check"></i> Pricing configurations saved.
+                                    </div>
+                                </form>
+                            </div>
+                        </details>
+
+                        <!-- Accordion Header 2: Chip Inventory Manager -->
+                        <details class="accordion-item glass">
+                            <summary class="accordion-header">
+                                <span><i class="fa-solid fa-boxes-stacked"></i> Chip Catalog</span>
+                                <i class="fa-solid fa-chevron-down accordion-indicator"></i>
+                            </summary>
+                            <div class="accordion-content">
+                                <div class="catalog-actions-bar">
+                                    <input type="text" id="chip-catalog-search" placeholder="Search catalog..." class="search-input">
+                                    <button id="btn-open-create-chip" class="btn btn-primary btn-xs">
+                                        <i class="fa-solid fa-plus"></i> Add Chip
+                                    </button>
+                                </div>
+                                <div class="catalog-table-wrapper scrollable-y">
+                                    <table class="matrix-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Maker</th>
+                                                <th>Grade</th>
+                                                <th>Size</th>
+                                                <th>Type</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="catalog-chips-body">
+                                            <!-- Dynamically injected -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BOTTOM NAVIGATION BAR -->
+            <nav class="app-nav glass">
+                <button class="nav-tab active" data-target="panel-scan">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Scan</span>
+                </button>
+                <button class="nav-tab" data-target="panel-history">
+                    <i class="fa-solid fa-list-ul"></i>
+                    <span>History</span>
+                </button>
+                <button class="nav-tab" data-target="panel-approvals" id="nav-tab-approvals">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span class="nav-label-wrapper">
+                        Approvals
+                        <span id="nav-badge-approvals" class="nav-count-badge hidden">0</span>
+                    </span>
+                </button>
+                <button class="nav-tab admin-only hidden" data-target="panel-admin">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Configure</span>
+                </button>
+            </nav>
+        </main>
+        
+    </div>
+
+    <!-- ==================== MODALS & POPUPS ==================== -->
+    
+    <!-- 1. AGE GATE MOCK GOOGLE LOGIN MODAL -->
+    <div id="google-age-gate-modal" class="modal-backdrop hidden">
+        <div class="modal-card glass scale-up">
+            <div class="modal-header">
+                <h3>Google Authentication</h3>
+                <button class="close-modal-btn" id="btn-close-age-gate"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="auth-icon-badge">
+                    <i class="fa-brands fa-google text-google"></i>
+                </div>
+                <h4>Age Verification Required</h4>
+                <p>This service contains regulated financial trading valuation tools. Please enter your birth year to confirm you are 18+ years old.</p>
+                
+                <div class="input-group mt-3">
+                    <label for="google-birth-year">Birth Year</label>
+                    <input type="number" id="google-birth-year" min="1930" max="2026" placeholder="YYYY" required>
+                </div>
+                
+                <div id="age-gate-error" class="error-banner hidden mt-2">
+                    <i class="fa-solid fa-circle-info"></i> <span>Verification failed. You must be 18+.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-google-auth-submit" class="btn btn-primary btn-block">Confirm & Log In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TECH: SUBMIT UNKNOWN CHIP MODAL -->
+    <div id="submit-unknown-modal" class="modal-backdrop hidden">
+        <div class="modal-card glass">
+            <div class="modal-header">
+                <h3>Submit Code for Approval</h3>
+                <button class="close-modal-btn" id="btn-close-unknown-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Submit this model code to the administrator catalog list. Once approved, you will get a notification.</p>
+                <form id="unknown-chip-form">
+                    <div class="input-group">
+                        <label>Detected Code</label>
+                        <input type="text" id="unknown-code" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label for="unknown-maker">Manufacturer / Maker</label>
+                        <input type="text" id="unknown-maker" placeholder="e.g. Samsung, SK Hynix">
+                    </div>
+                    <div class="input-group">
+                        <label for="unknown-size">Size / Capacity</label>
+                        <select id="unknown-size">
+                            <option value="16GB">16 GB</option>
+                            <option value="32GB">32 GB</option>
+                            <option value="64GB">64 GB</option>
+                            <option value="128GB" selected>128 GB</option>
+                            <option value="256GB">256 GB</option>
+                            <option value="512GB">512 GB</option>
+                            <option value="1TB">1 TB</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="unknown-type">Chip Protocol Type</label>
+                        <select id="unknown-type">
+                            <option value="UFS 2.1" selected>UFS 2.1</option>
+                            <option value="UFS 3.0">UFS 3.0</option>
+                            <option value="UFS 3.1">UFS 3.1</option>
+                            <option value="eMMC">eMMC</option>
+                            <option value="NAND">NAND Flash</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="unknown-classification">Classification</label>
+                        <select id="unknown-classification">
+                            <option value="coded" selected>Coded (Authentic model)</option>
+                            <option value="noncode">Non-Code (Generic/Sanded)</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="unknown-image-url">
+                    <button type="submit" class="btn btn-primary btn-block mt-3">Submit Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ADMIN: RESOLVE APPROVAL REQUEST MODAL -->
+    <div id="admin-resolve-modal" class="modal-backdrop hidden">
+        <div class="modal-card glass">
+            <div class="modal-header">
+                <h3>Resolve Approval Request</h3>
+                <button class="close-modal-btn" id="btn-close-resolve-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="request-meta-card">
+                    <p><strong>Code Requested:</strong> <span id="admin-req-code" class="font-mono text-cyan"></span></p>
+                    <p><strong>Technician:</strong> <span id="admin-req-tech"></span></p>
+                    <p><strong>Suggested Details:</strong> <span id="admin-req-details"></span></p>
+                </div>
+                
+                <div class="scan-preview-image mt-2">
+                    <img id="admin-req-image" src="" alt="Tech uploaded scan" class="mb-2">
+                </div>
+
+                <form id="admin-resolve-form">
+                    <input type="hidden" id="admin-req-id">
+                    
+                    <div class="input-group">
+                        <label for="resolve-grade">Assign Grade</label>
+                        <select id="resolve-grade">
+                            <option value="A1">A1 (Premium)</option>
+                            <option value="A2">A2 (High-Grade)</option>
+                            <option value="A3">A3 (Standard)</option>
+                            <option value="A4">A4 (Budget)</option>
+                            <option value="A5">A5 (Low-End)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="resolve-maker">Confirm Maker</label>
+                        <input type="text" id="resolve-maker" required>
+                    </div>
+                    
+                    <div class="button-split mt-3">
+                        <button type="button" id="btn-resolve-reject" class="btn btn-danger btn-block-half">
+                            <i class="fa-solid fa-ban"></i> Reject Request
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-block-half">
+                            <i class="fa-solid fa-check"></i> Approve & Seed
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ADMIN: MANUALLY CREATE CHIP MODAL -->
+    <div id="admin-create-chip-modal" class="modal-backdrop hidden">
+        <div class="modal-card glass">
+            <div class="modal-header">
+                <h3>Add New Chip to Catalog</h3>
+                <button class="close-modal-btn" id="btn-close-create-chip-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="admin-create-chip-form" enctype="multipart/form-data">
+                    <div class="input-group">
+                        <label for="create-code">Model Code *</label>
+                        <input type="text" id="create-code" placeholder="e.g. KLUDG4U1EA-B0C1" required>
+                    </div>
+                    
+                    <div class="grid-2-cols">
+                        <div class="input-group">
+                            <label for="create-maker">Maker *</label>
+                            <input type="text" id="create-maker" placeholder="e.g. Samsung" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="create-grade">Grade *</label>
+                            <select id="create-grade">
+                                <option value="A1">A1</option>
+                                <option value="A2">A2</option>
+                                <option value="A3">A3</option>
+                                <option value="A4">A4</option>
+                                <option value="A5">A5</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2-cols">
+                        <div class="input-group">
+                            <label for="create-size">Size *</label>
+                            <select id="create-size">
+                                <option value="16GB">16 GB</option>
+                                <option value="32GB">32 GB</option>
+                                <option value="64GB">64 GB</option>
+                                <option value="128GB" selected>128 GB</option>
+                                <option value="256GB">256 GB</option>
+                                <option value="512GB">512 GB</option>
+                                <option value="1TB">1 TB</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="create-type">Type *</label>
+                            <input type="text" id="create-type" placeholder="e.g. UFS 2.1" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="create-alias">Alias (Comma separated)</label>
+                        <input type="text" id="create-alias" placeholder="e.g. KLU128">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="create-alternate">Alternate Codes</label>
+                        <input type="text" id="create-alternate" placeholder="e.g. KLUDG4U1UM-B0E1">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="create-note">Custom Notes</label>
+                        <textarea id="create-note" placeholder="Any custom technician grading advice..." rows="2"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="create-image">Reference Image (For Perceptual Hashing)</label>
+                        <input type="file" id="create-image" accept="image/*">
+                    </div>
+                    
+                    <div id="create-chip-error" class="error-banner hidden">
+                        <i class="fa-solid fa-circle-exclamation"></i> <span>Failed to save chip.</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block mt-3">Add to Inventory</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. IMAGE ADJUST / CROP MODAL -->
+    <div id="image-crop-modal" class="modal-backdrop hidden">
+        <div class="modal-card glass crop-modal-card">
+            <div class="modal-header">
+                <h3>Adjust & Crop Chip</h3>
+                <button class="close-modal-btn" id="btn-close-crop-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body crop-modal-body">
+                <p class="text-sm text-muted">Crop closely around the model markings (e.g. SAMSUNG, Model Code) for faster & more accurate scanning.</p>
+                <div class="cropper-container-wrapper">
+                    <img id="cropper-target-image" src="" alt="Target to crop">
+                </div>
+                <div class="cropper-toolbar">
+                    <button type="button" id="btn-crop-rotate-left" class="btn btn-secondary btn-xs"><i class="fa-solid fa-rotate-left"></i> Rotate Left</button>
+                    <button type="button" id="btn-crop-rotate-right" class="btn btn-secondary btn-xs"><i class="fa-solid fa-rotate-right"></i> Rotate Right</button>
+                    <button type="button" id="btn-crop-reset" class="btn btn-secondary btn-xs"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-crop-cancel" class="btn btn-secondary btn-block-half">Cancel</button>
+                <button id="btn-crop-submit" class="btn btn-primary btn-block-half">Crop & Scan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. GENERIC CUSTOM CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="modal-backdrop hidden">
+        <div class="modal-card glass scale-up" style="max-width: 320px; text-align: center;">
+            <div class="modal-body" style="padding-top: 10px; display: flex; flex-direction: column; align-items: center;">
+                <div class="auth-icon-badge" style="background: rgba(0, 242, 254, 0.1); color: var(--color-cyan); width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 12px;">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+                <h4 id="confirm-title" style="font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;">Confirm Action</h4>
+                <p id="confirm-message" style="margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; text-align: center;">Are you sure you want to proceed?</p>
+                <div class="button-split">
+                    <button id="btn-confirm-cancel" class="btn btn-secondary btn-block-half" style="padding: 10px 16px;">Cancel</button>
+                    <button id="btn-confirm-ok" class="btn btn-primary btn-block-half" style="padding: 10px 16px;">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cropper.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <!-- Local JS -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
