@@ -432,7 +432,7 @@ def api_scan_image(request):
             # Apply heuristics database matcher
             matched_chip_candidate, match_score_val = match_chip_heuristics(tokens)
             
-            if matched_chip_candidate and match_score_val >= 0.5:
+            if matched_chip_candidate and match_score_val >= 0.80:
                 scan_status = 'MATCHED'
                 matched_chip = matched_chip_candidate
             else:
