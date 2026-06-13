@@ -164,5 +164,38 @@ class ScannerAppTests(TestCase):
         data = response.json()
         self.assertTrue(data['success'])
         self.assertEqual(data['user']['username'], 'google_user')
+
+    def test_api_scan_manual(self):
+        """
+        Verify that manually searching a chip writes to ScanHistory with the right parameters.
+        """
+        seed_database_if_empty()
+        client = Client()
         
+        # Log in first
+        client.post(
+            reverse('api_login'),
+            data=json.dumps({'username': 'tech1', 'password': 'tech123'}),
+            content_type='application/json'
+        )
+        
+        # Post manual scan
+        response = client.post(
+            reverse('api_scan_manual'),
+            data=json.dumps({'code': 'KLUEG8UHDB-C2D1'}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['scan']['code'], 'KLUEG8UHDB-C2D1')
+        self.assertEqual(data['scan']['scan_status'], 'MANUAL')
+        
+        # Check ScanHistory
+        self.assertTrue(ScanHistory.objects.filter(
+            code='KLUEG8UHDB-C2D1',
+            user='tech1',
+            scan_status='MANUAL'
+        ).exists())
+
 import json

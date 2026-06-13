@@ -1441,3 +1441,33 @@ details[open] .accordion-indicator {
     background: rgba(217, 119, 6, 0.08);
     border-color: rgba(217, 119, 6, 0.2);
 }
+
+/* ==================== MANUAL LOOKUP SEARCH SUGGESTIONS ==================== */
+.suggestion-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+.suggestion-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] .suggestion-item:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+.suggestion-item .suggestion-code {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-main);
+}
+.suggestion-item .suggestion-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}

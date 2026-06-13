@@ -17,6 +17,7 @@ urlpatterns = [
     
     path('api/scan/history/', views.api_scan_history, name='api_scan_history'),
     path('api/scan/image/', views.api_scan_image, name='api_scan_image'),
+    path('api/scan/manual/', views.api_scan_manual, name='api_scan_manual'),
     
     path('api/approvals/submit/', views.api_submit_approval, name='api_submit_approval'),
     path('api/approvals/', views.api_approvals, name='api_approvals'),

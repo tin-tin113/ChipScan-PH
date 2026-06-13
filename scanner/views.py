@@ -737,6 +737,73 @@ def api_stats(request):
         }
     })
 
+@csrf_exempt
+def api_scan_manual(request):
+    username, role = get_current_user(request)
+    if not username:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+        
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
+        
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        data = request.POST
+        
+    code = data.get('code')
+    if not code:
+        return JsonResponse({'error': 'Chip code is required'}, status=400)
+        
+    try:
+        c = Chip.objects.get(code=code)
+        
+        # Calculate pricing
+        try:
+            price_obj = Price.objects.get(grade=c.grade, role=role)
+            p_coded = price_obj.price_coded
+            p_noncode = price_obj.price_noncode
+        except Price.DoesNotExist:
+            p_coded = 0
+            p_noncode = 0
+            
+        # Create ScanHistory with scan_status='MANUAL'
+        history_entry = ScanHistory.objects.create(
+            code=c.code,
+            grade=c.grade,
+            size=c.size,
+            type=c.type,
+            maker=c.maker,
+            price_coded=p_coded,
+            price_noncode=p_noncode,
+            user=username,
+            status=c.status,
+            ocr_text="[Manual Entry Search]",
+            matched_chip=c,
+            scan_status='MANUAL'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'scan': {
+                'id': history_entry.id,
+                'code': c.code,
+                'grade': c.grade,
+                'size': c.size,
+                'type': c.type,
+                'maker': c.maker,
+                'status': c.status,
+                'price_coded': p_coded,
+                'price_noncode': p_noncode,
+                'image_url': '',
+                'ocr_text': '[Manual Entry Search]',
+                'scan_status': 'MANUAL',
+                'match_score': 1.0
+            }
+        })
+    except Chip.DoesNotExist:
+        return JsonResponse({'error': 'Chip not found'}, status=404)
+
 def camera_stream(request):
     """
     Mock web camera stream endpoint. Serves an MJPEG video stream.

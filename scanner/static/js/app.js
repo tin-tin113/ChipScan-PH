@@ -45,6 +45,9 @@ const DOM = {
     zoomControlContainer: document.getElementById('zoom-control-container'),
     bgaGuideSelect: document.getElementById('bga-guide-select'),
     viewfinderReticle: document.getElementById('viewfinder-reticle'),
+    manualChipSearch: document.getElementById('manual-chip-search'),
+    btnClearSearch: document.getElementById('btn-clear-search'),
+    searchSuggestionsBox: document.getElementById('search-suggestions-box'),
     
     // Scan Details
     resultMakerCode: document.getElementById('result-maker-code'),
@@ -311,9 +314,22 @@ function handleLoginSuccess(user) {
     // Start Camera & Load Initial Data
     initCamera();
     loadDashboardData();
+    refreshChipsCache();
     
     // Set up polling for approvals and notifications
     startPolling();
+}
+
+async function refreshChipsCache() {
+    try {
+        const response = await fetch('/api/chips/');
+        const data = await response.json();
+        if (data.chips) {
+            catalogChips = data.chips;
+        }
+    } catch (err) {
+        console.error("Failed to refresh chip cache: ", err);
+    }
 }
 
 DOM.logoutBtn.addEventListener('click', async () => {
@@ -1415,4 +1431,107 @@ if (DOM.bgaGuideSelect) {
             }
         }
     });
+}
+
+// ==================== MANUAL CHIP SEARCH AUTOCOMPLETE ====================
+if (DOM.manualChipSearch) {
+    DOM.manualChipSearch.addEventListener('focus', async () => {
+        if (!catalogChips || catalogChips.length === 0) {
+            console.log("[Autocomplete] Input focused, cache empty. Refreshing...");
+            await refreshChipsCache();
+            console.log(`[Autocomplete] Cache loaded: ${catalogChips.length} chips.`);
+        }
+    });
+
+    DOM.manualChipSearch.addEventListener('input', async (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q) {
+            DOM.searchSuggestionsBox.classList.add('hidden');
+            DOM.btnClearSearch.classList.add('hidden');
+            return;
+        }
+        
+        DOM.btnClearSearch.classList.remove('hidden');
+        
+        if (!catalogChips || catalogChips.length === 0) {
+            console.log("[Autocomplete] Typing, cache empty. Refreshing...");
+            await refreshChipsCache();
+            console.log(`[Autocomplete] Cache loaded: ${catalogChips.length} chips.`);
+        }
+        
+        // Filter catalogChips safely
+        const filtered = (catalogChips || []).filter(c => {
+            const code = (c.code || '').toLowerCase();
+            const maker = (c.maker || '').toLowerCase();
+            const alias = (c.alias || '').toLowerCase();
+            const alt = (c.alternate_codes || '').toLowerCase();
+            return code.includes(q) || maker.includes(q) || alias.includes(q) || alt.includes(q);
+        }).slice(0, 8); // limit to 8 suggestions
+        
+        console.log(`[Autocomplete] Query "${q}" matched ${filtered.length} chips out of ${catalogChips.length}`);
+        
+        if (filtered.length === 0) {
+            DOM.searchSuggestionsBox.innerHTML = `<div style="padding: 10px 14px; font-size: 0.8rem; color: var(--text-muted); text-align: center;">No matches found</div>`;
+        } else {
+            DOM.searchSuggestionsBox.innerHTML = filtered.map(c => `
+                <div class="suggestion-item" data-code="${c.code}">
+                    <span class="suggestion-code">${c.code}</span>
+                    <span class="suggestion-meta">${c.maker} | ${c.size} | ${c.type}</span>
+                </div>
+            `).join('');
+            
+            // Attach click listeners to suggestion items
+            DOM.searchSuggestionsBox.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const code = item.getAttribute('data-code');
+                    DOM.manualChipSearch.value = code;
+                    DOM.searchSuggestionsBox.classList.add('hidden');
+                    submitManualLookup(code);
+                });
+            });
+        }
+        DOM.searchSuggestionsBox.classList.remove('hidden');
+    });
+}
+
+if (DOM.btnClearSearch) {
+    DOM.btnClearSearch.addEventListener('click', () => {
+        DOM.manualChipSearch.value = '';
+        DOM.searchSuggestionsBox.classList.add('hidden');
+        DOM.btnClearSearch.classList.add('hidden');
+    });
+}
+
+// Close suggestions dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (DOM.searchSuggestionsBox && !DOM.manualChipSearch.contains(e.target) && !DOM.searchSuggestionsBox.contains(e.target)) {
+        DOM.searchSuggestionsBox.classList.add('hidden');
+    }
+});
+
+async function submitManualLookup(code) {
+    DOM.scanResultCard.classList.add('hidden');
+    DOM.scannerLoader.classList.remove('hidden');
+    
+    try {
+        const response = await fetch('/api/scan/manual/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ code })
+        });
+        const result = await response.json();
+        DOM.scannerLoader.classList.add('hidden');
+        
+        if (response.ok && result.success) {
+            displayScanResult(result.scan);
+        } else {
+            alert(result.error || "Manual lookup failed.");
+        }
+    } catch (err) {
+        DOM.scannerLoader.classList.add('hidden');
+        alert("Network error: failed to submit manual lookup.");
+    }
 }
