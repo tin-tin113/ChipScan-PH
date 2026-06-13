@@ -729,6 +729,30 @@ select option {
     border-radius: 8px;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
     pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.scanner-reticle.reticle-square {
+    width: 55%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+}
+.scanner-reticle.reticle-rect {
+    width: 50%;
+    height: auto;
+    aspect-ratio: 11.5 / 13;
+}
+.scanner-reticle.reticle-wide {
+    width: 70%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+}
+.scanner-reticle.reticle-none {
+    border-color: transparent;
+    box-shadow: none;
+}
+.scanner-reticle.reticle-none::before,
+.scanner-reticle.reticle-none::after {
+    display: none;
 }
 .scanner-reticle::before {
     content: '';

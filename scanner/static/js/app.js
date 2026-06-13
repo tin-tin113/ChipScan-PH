@@ -39,6 +39,11 @@ const DOM = {
     galleryInput: document.getElementById('gallery-input'),
     scannerLoader: document.getElementById('scanner-loader'),
     scanResultCard: document.getElementById('scan-result-card'),
+    cameraZoomSlider: document.getElementById('camera-zoom-slider'),
+    zoomValueLabel: document.getElementById('zoom-value-label'),
+    zoomControlContainer: document.getElementById('zoom-control-container'),
+    bgaGuideSelect: document.getElementById('bga-guide-select'),
+    viewfinderReticle: document.getElementById('viewfinder-reticle'),
     
     // Scan Details
     resultMakerCode: document.getElementById('result-maker-code'),
@@ -392,10 +397,37 @@ async function initCamera() {
         }
         
         useLiveCamera = true;
+
+        // Check zoom capabilities on the track
+        const track = cameraStream.getVideoTracks()[0];
+        if (track) {
+            try {
+                // Wait briefly for capabilities to populate
+                setTimeout(() => {
+                    if (!cameraStream) return;
+                    const capabilities = track.getCapabilities();
+                    if (capabilities.zoom) {
+                        DOM.zoomControlContainer.style.display = 'flex';
+                        DOM.cameraZoomSlider.min = capabilities.zoom.min || 1;
+                        DOM.cameraZoomSlider.max = capabilities.zoom.max || 5;
+                        DOM.cameraZoomSlider.step = capabilities.zoom.step || 0.1;
+                        DOM.cameraZoomSlider.value = track.getSettings().zoom || 1;
+                        DOM.zoomValueLabel.innerText = `${parseFloat(DOM.cameraZoomSlider.value).toFixed(1)}x`;
+                    } else {
+                        DOM.zoomControlContainer.style.display = 'none';
+                    }
+                }, 400);
+            } catch (e) {
+                DOM.zoomControlContainer.style.display = 'none';
+            }
+        } else {
+            DOM.zoomControlContainer.style.display = 'none';
+        }
     } catch (err) {
         // Fallback: If webcam fails or is rejected, stream from mock web cam stream route
         console.warn("Camera init failed, falling back to mock stream endpoint: ", err);
         DOM.cameraVideo.classList.add('hidden');
+        DOM.zoomControlContainer.style.display = 'none';
         
         // Create an image element to load stream instead
         let mockImg = document.getElementById('camera-mock-img');
@@ -417,6 +449,7 @@ function stopCamera() {
         cameraStream = null;
     }
     DOM.cameraVideo.srcObject = null;
+    DOM.zoomControlContainer.style.display = 'none';
 }
 
 // CAPTURE FRAME ACTION
@@ -1294,4 +1327,49 @@ function stopPolling() {
         clearInterval(pollingTimer);
         pollingTimer = null;
     }
+}
+
+// ==================== CALIBRATION CONTROLS (ZOOM & SHAPE OVERLAY) ====================
+function applyZoom(zoomVal) {
+    if (!cameraStream) return;
+    const track = cameraStream.getVideoTracks()[0];
+    if (track) {
+        try {
+            const capabilities = track.getCapabilities();
+            if (capabilities.zoom) {
+                const min = capabilities.zoom.min || 1;
+                const max = capabilities.zoom.max || 5;
+                const clamped = Math.max(min, Math.min(max, zoomVal));
+                track.applyConstraints({
+                    advanced: [{ zoom: clamped }]
+                });
+            }
+        } catch (e) {
+            console.warn("Failed to apply camera zoom: ", e);
+        }
+    }
+}
+
+// Bind listeners for zoom slider and shape guide select dropdown
+if (DOM.cameraZoomSlider) {
+    DOM.cameraZoomSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        DOM.zoomValueLabel.innerText = `${val.toFixed(1)}x`;
+        applyZoom(val);
+    });
+}
+
+if (DOM.bgaGuideSelect) {
+    DOM.bgaGuideSelect.addEventListener('change', (e) => {
+        const shape = e.target.value;
+        if (DOM.viewfinderReticle) {
+            // Remove previous guide classes
+            DOM.viewfinderReticle.className = 'scanner-reticle';
+            if (shape !== 'none') {
+                DOM.viewfinderReticle.classList.add(`reticle-${shape}`);
+            } else {
+                DOM.viewfinderReticle.classList.add('reticle-none');
+            }
+        }
+    });
 }

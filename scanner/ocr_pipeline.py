@@ -22,9 +22,12 @@ def get_ocr_engine():
         _ocr_engine = PaddleOCR(
             use_textline_orientation=False,
             lang='en',
-            enable_mkldnn=False,
+            enable_mkldnn=True,
             use_doc_unwarping=False,
-            use_doc_orientation_classify=False
+            use_doc_orientation_classify=False,
+            use_angle_cls=False,
+            rec_batch_num=1,
+            show_log=False
         )
     return _ocr_engine
 
@@ -115,7 +118,7 @@ def preprocess_image(cv_image):
 
 def compute_phash(cv_image):
     """
-    Computes a 32-character hex perceptual hash combining dHash (16-char) and aHash (16-char).
+    Computes a 32-character hex DCT-based perceptual hash (pHash) (128 bits).
     """
     if cv_image is None:
         return ""
@@ -125,21 +128,25 @@ def compute_phash(cv_image):
     else:
         gray = cv_image
         
-    # --- aHash (Average Hash) ---
-    resized_ahash = cv2.resize(gray, (8, 8), interpolation=cv2.INTER_AREA)
-    avg = resized_ahash.mean()
-    ahash_bits = "".join(['1' if pixel >= avg else '0' for pixel in resized_ahash.flatten()])
-    ahash_hex = f"{int(ahash_bits, 2):016x}"
+    # 1. Resize to 32x32
+    resized = cv2.resize(gray, (32, 32), interpolation=cv2.INTER_AREA)
     
-    # --- dHash (Difference Hash) ---
-    resized_dhash = cv2.resize(gray, (9, 8), interpolation=cv2.INTER_AREA)
-    dhash_bits = ""
-    for r in range(8):
-        for c in range(8):
-            dhash_bits += '1' if resized_dhash[r, c] > resized_dhash[r, c+1] else '0'
-    dhash_hex = f"{int(dhash_bits, 2):016x}"
+    # 2. Compute 2D Discrete Cosine Transform (DCT)
+    dct = cv2.dct(np.float32(resized))
     
-    return dhash_hex + ahash_hex
+    # 3. Extract top-left 16x8 coefficients to get 128 coefficients (128 bits)
+    dct_low = dct[0:16, 0:8]
+    
+    # 4. Flatten and find the median (exclude DC term at index 0 to remain brightness-invariant)
+    flat = dct_low.flatten()
+    median = np.median(flat[1:])
+    
+    # 5. Build 128-bit binary string
+    hash_bits = "".join(['1' if val > median else '0' for val in flat])
+    
+    # 6. Convert to 32-character hex representation
+    hash_hex = f"{int(hash_bits, 2):032x}"
+    return hash_hex
 
 def hamming_distance(hash1, hash2):
     """

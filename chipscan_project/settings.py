@@ -24,7 +24,7 @@ import os
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-^_@)hmb-)qlf8$^%h-4$dfhes&n&92zf8ic==_q(d*9edafb5)')
 
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 if '.onrender.com' not in ALLOWED_HOSTS and not DEBUG:
