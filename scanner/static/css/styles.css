@@ -119,6 +119,7 @@ body {
     width: 100%;
     max-width: 430px;
     height: 100vh;
+    height: 100dvh; /* Dynamic viewport height to prevent browser toolbar overlap */
     max-height: 932px; /* iPhone 15 Pro Max Ratio */
     background: rgba(10, 15, 30, 0.4);
     backdrop-filter: blur(20px);
@@ -139,6 +140,7 @@ body {
         border-radius: 0;
         border: none;
         max-height: 100vh;
+        max-height: 100dvh;
     }
 }
 
@@ -491,6 +493,7 @@ select option {
     justify-content: space-between;
     align-items: center;
     z-index: 10;
+    flex-shrink: 0;
 }
 .header-user-info {
     display: flex;
@@ -595,6 +598,7 @@ select option {
     justify-content: space-around;
     align-items: center;
     padding-bottom: env(safe-area-inset-bottom);
+    flex-shrink: 0;
 }
 .nav-tab {
     flex: 1;
