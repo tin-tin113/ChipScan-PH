@@ -531,7 +531,8 @@ def api_scan_image(request):
             'image_url': image_url,
             'ocr_text': ocr_text,
             'scan_status': scan_status,
-            'match_score': round(match_score_val, 2)
+            'match_score': round(match_score_val, 2),
+            'note': matched_chip.note if matched_chip else ""
         }
     }
     
@@ -798,7 +799,8 @@ def api_scan_manual(request):
                 'image_url': '',
                 'ocr_text': '[Manual Entry Search]',
                 'scan_status': 'MANUAL',
-                'match_score': 1.0
+                'match_score': 1.0,
+                'note': c.note
             }
         })
     except Chip.DoesNotExist:

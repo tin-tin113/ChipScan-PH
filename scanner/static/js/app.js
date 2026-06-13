@@ -61,6 +61,7 @@ const DOM = {
     valPriceCoded: document.getElementById('val-price-coded'),
     valPriceNoncode: document.getElementById('val-price-noncode'),
     valNotes: document.getElementById('val-notes'),
+    valOcrText: document.getElementById('val-ocr-text'),
     scanPreviewImg: document.getElementById('scan-preview-img'),
     requestApprovalSection: document.getElementById('request-approval-section'),
     btnRequestApproval: document.getElementById('btn-request-approval'),
@@ -732,6 +733,13 @@ function displayScanResult(scan) {
     DOM.valScore.innerText = scan.match_score;
     DOM.valPriceCoded.innerText = `₱${scan.price_coded.toLocaleString()}`;
     DOM.valPriceNoncode.innerText = `₱${scan.price_noncode.toLocaleString()}`;
+    
+    if (DOM.valOcrText) {
+        DOM.valOcrText.innerText = scan.ocr_text || 'None detected';
+    }
+    if (DOM.valNotes) {
+        DOM.valNotes.innerText = scan.note || 'No manual notes registered for this storage module.';
+    }
     
     if (scan.scan_status === 'MATCHED') {
         DOM.resultStatusBadge.innerText = 'MATCHED';
