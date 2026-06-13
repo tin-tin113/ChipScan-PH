@@ -384,6 +384,13 @@ async function initCamera() {
         };
         cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
         DOM.cameraVideo.srcObject = cameraStream;
+        DOM.cameraVideo.classList.remove('hidden');
+        
+        let mockImg = document.getElementById('camera-mock-img');
+        if (mockImg) {
+            mockImg.classList.add('hidden');
+        }
+        
         useLiveCamera = true;
     } catch (err) {
         // Fallback: If webcam fails or is rejected, stream from mock web cam stream route
