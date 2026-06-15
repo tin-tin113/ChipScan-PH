@@ -89,8 +89,15 @@ def deskew(gray):
 
 def preprocess_image(cv_image):
     """
-    Runs the image through the pipeline:
-    Grayscale -> Resize (min 800px Lanczos) -> Deskew -> Bilateral -> CLAHE -> Median Blur -> Sharpen.
+    Runs the image through the optimized pipeline:
+    Grayscale -> Resize (max 1600px, Area interpolation) -> Deskew ->
+    Gaussian Blur (5x5) -> Otsu Binarization.
+
+    This pipeline was chosen over the previous Bilateral+CLAHE+Median+Sharpen stack
+    because CLAHE amplified screen moire/scanline noise and the 800px resize limit
+    eroded thin laser-etched characters, both causing OCR failures on real-world chip scans.
+    Gaussian Blur smooths out sensor grid noise while Otsu Binarization maximizes
+    contrast between text and chip surface regardless of lighting conditions.
     """
     # 1. Convert to grayscale
     if len(cv_image.shape) == 3:
@@ -98,11 +105,11 @@ def preprocess_image(cv_image):
     else:
         gray = cv_image.copy()
 
-    # 2. Smart Resizing: Keep size bounded to speed up inference while maintaining OCR quality
+    # 2. Smart Resizing: Scale up to 1600px max side to preserve fine character detail.
+    #    Area interpolation is best for downscaling; Lanczos4 is best for upscaling.
     h, w = gray.shape[:2]
-    max_side = 800
+    max_side = 1600
     if max(h, w) > max_side:
-        # Scale down large images using Area interpolation (best for downscaling)
         scale = max_side / float(max(h, w))
         new_w = int(round(w * scale))
         new_h = int(round(h * scale))
@@ -117,21 +124,15 @@ def preprocess_image(cv_image):
     # 3. Deskewing (rotate to align text horizontally)
     gray, angle = deskew(gray)
 
-    # 4. Bilateral filter to remove screen moire/grid noise while preserving edges
-    bilateral = cv2.bilateralFilter(gray, 9, 75, 75)
+    # 4. Gaussian Blur (5x5) to remove high-frequency sensor grid / moire noise
+    #    while keeping character edges intact for binarization.
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # 5. CLAHE contrast adjustment
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    contrast = clahe.apply(bilateral)
+    # 5. Otsu Binarization: automatically picks the optimal threshold to
+    #    cleanly separate dark laser-etched text from bright chip surface.
+    _, binarized = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    # 6. Median blur
-    m_blur = cv2.medianBlur(contrast, 3)
-
-    # 7. Sharpening using Gaussian unsharp mask
-    blurred = cv2.GaussianBlur(m_blur, (5, 5), 0)
-    sharpened = cv2.addWeighted(m_blur, 1.5, blurred, -0.5, 0)
-
-    return sharpened
+    return binarized
 
 def compute_phash(cv_image):
     """
